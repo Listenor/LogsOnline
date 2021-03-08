@@ -43,7 +43,7 @@ public class LogWebSocketHandle {
 		}else{
 			HttpSession httpSession = (HttpSession) config.getUserProperties().get(HttpSession.class.getName());
 			String allLogsName = (String) httpSession.getAttribute(Const.AllFilesNameStr);
-			//限制，防止拼接命令
+			//限制，防止拼接命令额不是已有文件
 			if(null!= allLogsName && null!= param && allLogsName.indexOf(param)!=-1){
 				try {
 					// 执行tail -f命令
