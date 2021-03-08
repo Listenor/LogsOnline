@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>tail log</title>
+    <script src="js/jquery.js"></script>
+	<link type="text/css" rel="stylesheet" href="css/tables.css">
+    <style>
+        .loading{
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="loading" id="loading">
+    <span style="vertical-align: middle">正在加载日志列表</span>
+    <img src="images/loading.gif" style="width: 16px;height: 16px;vertical-align: middle;"/>
+
+</div>
+<div class="blockContainer">
+
+    <table class="genericTbl table" style="border-spacing:0;border-collapse:separate;text-align: center;margin: auto" id="log">
+        <thead>
+        <tr>
+
+            <th class="sortable">
+                <a href="?d-16474-s=1&amp;d-16474-o=2">日志文件</a></th>
+
+            <th class="sortable">
+                <a href="?d-16474-s=3&amp;d-16474-o=2">大小</a></th>
+            <th class="sortable">
+                <a href="?d-16474-s=4&amp;d-16474-o=2">修改时间</a></th>
+            <th>下载</th>
+        </tr>
+        </thead>
+        <tbody id="showBody">
+        <tr class="odd" id="muban" style="display: none">
+            <td>
+                <a class="logfile"
+                   href="javascript:void(0)">
+                    <span onclick="openTailf(this)">##fileName##</span>
+                </a>
+            </td>
+
+            <td>
+                <span title="##size##">##sizeText##</span>&nbsp;
+            </td>
+            <td>
+                ##lastModified##
+            </td>
+            <td>
+                <a class="imglink"
+                   href=""><img
+                        class="lnk" src="images/page_white_put.png"
+                        alt="download"></a>
+                <a class="imglink" title="download compressed"
+                   href=""><img
+                        class="lnk" src="images/page_white_compressed.png"
+                        alt="download"></a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+
+<script>
+
+    $(document).ready(function() {
+        $.ajax({
+            type:"GET",
+            url:"logFiles",
+            dataType:'json',
+            success:function (data){
+
+
+
+                console.log(data);
+
+                if(data.code==200){
+                    $("#loading").css("visibility","hidden");
+                    showData(data.data);
+                }else{
+                    $("#loading").html("错误："+JSON.stringify(data.data));
+                }
+            },
+            error:function (jqXHR){
+                console.log(jqXHR);
+                $("#loading").html("请求失败："+jqXHR);
+            }
+        });
+    });
+
+    function showData(files){
+        var i = 0;
+
+        for (var j=0;j<files.length;j++){
+            var newTr = $("#muban").clone(true).removeAttr("id").removeAttr("style");
+            newTr.children("td").eq(0).children("a").eq(0).children("span").html(files[j].fileName);
+            newTr.children("td").eq(1).children("span").eq(0).attr("title",files[j].size).html(files[j].sizeText);
+            newTr.children("td").eq(2).html(files[j].lastModified);
+            newTr.children("td").eq(3).children("a").eq(0).attr("href","downloadLogFile?fileName="+files[j].fileName);
+            newTr.children("td").eq(3).children("a").eq(1).attr("href","downloadLogFile?compressed=true&fileName="+files[j].fileName);
+            $("#showBody").append(newTr) ;
+        }
+
+    }
+
+    function openTailf(e){
+        var log = $(e).html();
+        var iHeight = window.screen.availHeight * 0.8;
+        var iWidth = window.screen.availWidth * 0.8;
+        //resetSize
+        iHeight = iHeight > 500 ? iHeight:500;
+        iWidth = iWidth > 500 ? iWidth:500;
+        //获得窗口的垂直位置
+        var iTop = (window.screen.availHeight - 30 - iHeight) / 2;
+        //获得窗口的水平位置
+        var iLeft = (window.screen.availWidth - 10 - iWidth) / 2;
+
+        window.open("tailf.html?log="+log, "baidu", 'height=' + iHeight + ',innerHeight=' + iHeight + ',width=' + iWidth + ',innerWidth=' + iWidth + ',top=' + iTop + ',left=' + iLeft + ',status=no,toolbar=no,menubar=no,location=no,resizable=yes,scrollbars=0,titlebar=no');
+    }
+</script>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>tail log</title>
+<script src="js/jquery.js"></script>
+	<style>
+		* {
+			margin:0;
+			padding:0;
+		}
+		html,body{
+			height:100%;
+		}
+		.box{
+			height:96%;
+			overflow-y: scroll;
+			background: #333;
+			color: #aaa;
+			padding-left: 4px;
+
+		}
+		.box div{
+			white-space:pre;
+		}
+		#title{
+			height: 3%;
+			padding-left: 10px;
+		}
+	</style>
+</head>
+<body>
+	<div><span>日志文件：</span><span id="title" style="background-color: orange">title</span></div>
+	<div id="log-container" class="box">
+		<div></div>
+	</div>
+</body>
+<script>
+	$(document).ready(function() {
+		// 指定websocket路径
+
+		let s = window.location.search.substr(1);
+		let logName = s.substr(s.indexOf("=")+1);
+
+		let scrollDiv = document.getElementById("log-container");
+
+		$("#title").html(logName);
+
+		var index = document.location.pathname.substr(1).indexOf("/");
+		var projectName = document.location.pathname.substr(0,index+1);
+		var socketUrl = "ws://"+document.location.host+projectName+"/log/"+logName;
+		var websocket = new WebSocket(socketUrl);
+		websocket.onmessage = function(event) {
+			if("quit" == event.data){
+				websocket.close();
+			}else if("heart" == event.data){
+				//console.log("心跳接收一次")
+			}else{
+				// 接收服务端的实时日志并添加到HTML页面中
+				$("#log-container div").append(event.data);
+				// 滚动条滚动到最低部
+				//$("#log-container").scrollTop($("#log-container div").height() - $("#log-container").height());
+				scrollDiv.scrollTop = scrollDiv.scrollHeight;
+			}
+
+			//接收一次后台推送的消息，即进行一次心跳检测重置
+			heartCheck.reset();
+		};
+		websocket.onopen = function (){
+			//心跳检测启动
+			heartCheck.start();//订阅业务发送之后启动心跳检测机制
+		};
+		websocket.onerror = function (){
+			$("#log-container div").append("连接异常");
+		}
+		websocket.onclose = function (){
+			$("#log-container div").append("连接关闭");
+		}
+
+		//心跳检测
+		var heartCheck={
+			timeout: 30000,//30秒
+			timeoutObj: null,
+			reset: function(){//接收成功一次推送，就将心跳检测的倒计时重置为30秒
+				clearTimeout(this.timeoutObj);//重置倒计时
+				this.start();
+			},
+			start: function(){//启动心跳检测机制，设置倒计时30秒一次
+				this.timeoutObj = setTimeout(function(){
+					var message = {
+						"type": "t10010",
+						"service":"运行心跳业务一次 =="+ new Date()
+					};
+					// JSON.stringify()的作用是将 JavaScript 对象转换为 JSON 字符串
+					//而JSON.parse()可以将JSON字符串转为一个对象。
+					console.log("心跳一次");
+					websocket.send("heart");//启动心跳
+				},this.timeout)
+			}
+			//onopen连接上，就开始start及时，如果在定时时间范围内，onmessage获取到了服务端消息，
+			// 就重置reset倒计时，距离上次从后端获取消息30秒后，执行心跳检测，看是不是断了。
+		};
+
+	});
+
+
+</script>
+</body>
+</html>
